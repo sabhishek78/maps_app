@@ -2,25 +2,57 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'dart:convert';
+import 'dart:async' show Future;
+import 'package:flutter/services.dart' show rootBundle;
+import 'search.dart';
 
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      theme: ThemeData.dark(),
+      initialRoute: '/',
+      routes: {
+// When navigating to the "/" route, build the FirstScreen widget.
+        '/': (context) => MapSample(),
+// When navigating to the "/second" route, build the SecondScreen widget.
+        '/searchpage': (context) => SearchListExample(),
+
+      },
       title: 'Flutter Google Maps Demo',
-      home: MapSample(),
+     // home: MapSample(),
     );
   }
 }
+
 
 class MapSample extends StatefulWidget {
   @override
   State<MapSample> createState() => MapSampleState();
 }
+Future<String> loadCitiesFromAssets() async {
+  return await rootBundle.loadString('assets/cities.json');
+}
+Future loadCities() async {
+  String jsonString = await loadCitiesFromAssets();
+  jsonResponse = json.decode(jsonString);
 
+}
+
+List<Map> jsonResponse;
 class MapSampleState extends State<MapSample> {
+  @override
+  void initState() {
+    super.initState();
+    loadCities();
+
+  }
+
+
   int index=0;
   final Set<Marker> _markers = {};
 
@@ -45,6 +77,9 @@ class MapSampleState extends State<MapSample> {
       );
     });
   }
+  _onSearchButtonPressed() {
+    Navigator.pushNamed(context, '/searchpage');
+  }
   Widget button(Function function, IconData icon) {
     return FloatingActionButton(
       onPressed: function,
@@ -62,11 +97,11 @@ class MapSampleState extends State<MapSample> {
 
       child: ListTile(
 
-        title: Text(cityNames[index]),
-        onTap: () {
-               _nextCity(index);
-               print(index);
-        }
+          title: Text(cityNames[index]),
+          onTap: () {
+            _nextCity(index);
+            print(index);
+          }
       ),
     );
   }
@@ -77,66 +112,53 @@ class MapSampleState extends State<MapSample> {
         children: <Widget>[
           Expanded(
             child:
-                Stack(
-                  children: <Widget>[
-                    GoogleMap(
-                      mapType: MapType.hybrid,
-                      markers: _markers,
-                      initialCameraPosition: CameraPosition(
-                        target: LatLng(latitude[0],longitude[0]), zoom: 8,
-                      ),
-                      onMapCreated: (GoogleMapController controller) {
-                        _controller.complete(controller);
-                      },
-                    ),
-                    Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Align(
-                        alignment: Alignment.topRight,
-                        child: Column(
-                          children: <Widget>[
-
-                            button(_onAddMarkerButtonPressed, Icons.add_location),
-                            SizedBox(
-                              height: 16.0,
-                            ),
-
-                          ],
-                        ),
-                      ),
-                    ),
-
-                  ],
+            Stack(
+              children: <Widget>[
+                GoogleMap(
+                  mapType: MapType.hybrid,
+                  markers: _markers,
+                  initialCameraPosition: CameraPosition(
+                    target: LatLng(latitude[0],longitude[0]), zoom: 8,
+                  ),
+                  onMapCreated: (GoogleMapController controller) {
+                    _controller.complete(controller);
+                  },
                 ),
-          ),
-          Expanded(
+                Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Align(
+                    alignment: Alignment.topRight,
+                    child: Column(
+                      children: <Widget>[
+                        button(_onSearchButtonPressed, Icons.search),
+                        button(_onAddMarkerButtonPressed, Icons.add_location),
+                        SizedBox(
+                          height: 16.0,
+                        ),
 
-            child: ListView.builder
-              (
-                itemCount: 6,
-                itemBuilder: (BuildContext ctxt, int index) => buildBody(ctxt, index)
+                      ],
+                    ),
+                  ),
+                ),
+
+              ],
             ),
-          )
+          ),
+
         ],
       ),
 
 
 
 
-/*
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _nextCity,
-        label: Text('Next City!!'),
-        icon: Icon(Icons.navigation),
-      ),*/
 
     );
   }
 
   Future<void> _nextCity(int index) async {
-   // if(index==6){
+    // if(index==6){
     //  index=0;// reset city index
-  //  }
+    //  }
     final GoogleMapController controller = await _controller.future;
     controller.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
       target: cityCoordinates[index], zoom: 8,
